@@ -11,3 +11,8 @@ Once that finishes, you can start the training process:
 ```bash
 python train.py
 ```
+
+To test on a dataset, run:
+```bash
+python test.py
+```
