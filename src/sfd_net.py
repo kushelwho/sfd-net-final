@@ -26,11 +26,12 @@ class SFDNet(nn.Module):
         self.fusion         = FusionBlock(C)
 
     def forward(self, x, return_intermediates=False):
+        input_size = x.shape[2:]
         feat = self.stem(x)
         s = self.spatial_branch(feat)
         f = self.freq_branch(feat)
         s, f = self.cross_mod(s, f)
-        out, s_up, f_up = self.fusion(s, f)
+        out, s_up, f_up = self.fusion(s, f, output_size=input_size)
 
         if return_intermediates:
             return out, s_up, f_up

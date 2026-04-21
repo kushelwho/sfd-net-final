@@ -74,8 +74,10 @@ class SpatialBlock(nn.Module):
         e2 = self.enc2(self.pool1(e1))
         bn = self.bottleneck(self.pool2(e2))
 
-        d2 = self.dec2(torch.cat([self.up2(bn), e2], 1))
-        d1 = self.dec1(torch.cat([self.up1(d2), e1], 1))
+        up2 = F.interpolate(bn, size=e2.shape[2:], mode='bilinear', align_corners=False)
+        d2 = self.dec2(torch.cat([up2, e2], 1))
+        up1 = F.interpolate(d2, size=e1.shape[2:], mode='bilinear', align_corners=False)
+        d1 = self.dec1(torch.cat([up1, e1], 1))
         return d1
 
 
@@ -114,9 +116,13 @@ class FusionBlock(nn.Module):
         self.gate_conv = nn.Conv2d(channels * 2, channels, 1, bias=True)
         self.out_conv  = nn.Conv2d(channels, 3, 1, bias=True)
 
-    def forward(self, spatial, freq):
-        s_up = self.up(spatial)
-        f_up = self.up(freq)
+    def forward(self, spatial, freq, output_size=None):
+        if output_size is not None:
+            s_up = F.interpolate(spatial, size=output_size, mode='bilinear', align_corners=False)
+            f_up = F.interpolate(freq, size=output_size, mode='bilinear', align_corners=False)
+        else:
+            s_up = self.up(spatial)
+            f_up = self.up(freq)
 
         alpha = torch.sigmoid(self.gate_conv(torch.cat([s_up, f_up], 1)))
         fused = alpha * s_up + (1 - alpha) * f_up
